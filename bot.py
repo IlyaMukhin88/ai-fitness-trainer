@@ -1,12 +1,13 @@
 import os
 import requests
 from PIL import Image, ImageDraw, ImageFont
+import asyncio
 from telegram import Bot
 
 OUTPUT_DIR = "output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ---------- GENERATE EXERCISE TEXT VIA FREE LLM ----------
+# ---------- GENERATE EXERCISE TEXT VIA LLM ----------
 def generate_exercise_text():
     prompt = (
         "Ты персональный тренер. Сгенерируй одно упражнение для домашней тренировки с названием и короткой инструкцией, "
@@ -33,7 +34,7 @@ def generate_exercise_text():
         print("Ошибка генерации:", e)
         return "Приседания: Встаньте прямо, ноги на ширине плеч. Сгибайте колени и поднимайтесь обратно."
 
-# ---------- GENERATE GIF VIA SIMPLE MVP ----------
+# ---------- GENERATE GIF ----------
 def generate_exercise_gif(text, frames=5):
     images = []
     for i in range(frames):
@@ -48,10 +49,10 @@ def generate_exercise_gif(text, frames=5):
     images[0].save(gif_path, save_all=True, append_images=images[1:], duration=500, loop=0)
     return gif_path
 
-# ---------- SEND TO TELEGRAM ----------
-def send_exercise_to_telegram():
+# ---------- SEND TO TELEGRAM (async) ----------
+async def send_exercise_to_telegram():
     TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
-    TG_CHAT_ID = os.getenv("TG_CHAT_ID")  # ID чата для рассылки
+    TG_CHAT_ID = os.getenv("TG_CHAT_ID")
 
     bot = Bot(TG_BOT_TOKEN)
 
@@ -59,14 +60,14 @@ def send_exercise_to_telegram():
     gif_path = generate_exercise_gif(text)
 
     # Отправляем текст
-    bot.send_message(chat_id=TG_CHAT_ID, text=text)
+    await bot.send_message(chat_id=TG_CHAT_ID, text=text)
 
     # Отправляем гифку
     with open(gif_path, "rb") as f:
-        bot.send_animation(chat_id=TG_CHAT_ID, animation=f)
+        await bot.send_animation(chat_id=TG_CHAT_ID, animation=f)
 
     print("Упражнение успешно отправлено!")
 
 # ---------- MAIN ----------
 if __name__ == "__main__":
-    send_exercise_to_telegram()
+    asyncio.run(send_exercise_to_telegram())
