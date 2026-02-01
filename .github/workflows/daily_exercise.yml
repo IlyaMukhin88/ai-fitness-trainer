@@ -3,10 +3,10 @@ name: Daily Exercise Bot
 on:
   schedule:
     - cron: '0 9 * * *'  # каждый день в 9:00 UTC
-  workflow_dispatch:      # можно запускать вручную
+  workflow_dispatch:
 
 jobs:
-  run-bot:
+  daily-exercise:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,9 +20,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run bot script
+      - name: Run daily exercise
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GITHUB_ACTIONS: true
         run: python bot.py
