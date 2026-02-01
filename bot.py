@@ -1,8 +1,7 @@
 import os
 import requests
 from PIL import Image, ImageDraw, ImageFont
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram import Bot
 
 OUTPUT_DIR = "output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -17,7 +16,12 @@ def generate_exercise_text():
     headers = {"Authorization": f"Bearer {os.getenv('HF_TOKEN')}"}
 
     try:
-        r = requests.post(API_URL, headers=headers, json={"inputs": prompt, "parameters": {"max_new_tokens": 100}})
+        r = requests.post(
+            API_URL,
+            headers=headers,
+            json={"inputs": prompt, "parameters": {"max_new_tokens": 100}},
+            timeout=60
+        )
         resp = r.json()
         if isinstance(resp, list) and "generated_text" in resp[0]:
             return resp[0]["generated_text"]
@@ -44,34 +48,25 @@ def generate_exercise_gif(text, frames=5):
     images[0].save(gif_path, save_all=True, append_images=images[1:], duration=500, loop=0)
     return gif_path
 
-# ---------- TELEGRAM HANDLER ----------
-def exercise(update: Update, context: CallbackContext):
+# ---------- SEND TO TELEGRAM ----------
+def send_exercise_to_telegram():
+    TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
+    TG_CHAT_ID = os.getenv("TG_CHAT_ID")  # ID чата для рассылки
+
+    bot = Bot(TG_BOT_TOKEN)
+
     text = generate_exercise_text()
     gif_path = generate_exercise_gif(text)
 
     # Отправляем текст
-    update.message.reply_text(text)
+    bot.send_message(chat_id=TG_CHAT_ID, text=text)
 
     # Отправляем гифку
     with open(gif_path, "rb") as f:
-        update.message.reply_animation(f)
+        bot.send_animation(chat_id=TG_CHAT_ID, animation=f)
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Привет! Я твой персональный тренер. Используй /exercise чтобы получить новое упражнение с анимацией."
-    )
+    print("Упражнение успешно отправлено!")
 
-def main():
-    TOKEN = os.getenv("TG_BOT_TOKEN")
-    updater = Updater(TOKEN)
-    dp = updater.dispatcher
-
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("exercise", exercise))
-
-    updater.start_polling()
-    print("Бот запущен!")
-    updater.idle()
-
+# ---------- MAIN ----------
 if __name__ == "__main__":
-    main()
+    send_exercise_to_telegram()
