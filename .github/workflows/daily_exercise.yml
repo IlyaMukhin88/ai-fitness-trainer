@@ -1,0 +1,29 @@
+name: Daily Exercise Bot
+
+# Запуск каждый день в 9:00 UTC
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Можно запускать вручную
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot script
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python bot.py
